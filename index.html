@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Urdu &amp; Roman Urdu Misinformation Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #14202B;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #EDE7DA;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+  .eyebrow { display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#8B97A3; }
+  h1 { font-size:26px; margin:0 0 4px; color:#F4EFE6; font-weight:700; letter-spacing:-0.01em; }
+  h2.urdu { font-family:'Noto Nastaliq Urdu',serif; font-size:26px; line-height:1.8; margin:0 0 10px; direction:rtl; color:#C9BFA8; font-weight:500; }
+  p.sub { font-size:15px; color:#8B97A3; margin:0 0 32px; max-width:520px; }
+  .card { background:#1B2A38; border-radius:14px; padding:20px; border:1px solid #2A3B4A; }
+  textarea { width:100%; background:transparent; border:none; outline:none; resize:vertical; color:#F4EFE6; font-size:16px; line-height:1.6; font-family:inherit; }
+  textarea::placeholder { color:#5F6E7A; }
+  .row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:10px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { font-size:12px; padding:5px 10px; border-radius:20px; border:1px solid #3A4D5C; background:transparent; color:#8B97A3; cursor:pointer; }
+  button.analyze { padding:10px 20px; border-radius:8px; border:none; background:#E8A33D; color:#14202B; font-weight:600; font-size:14px; cursor:pointer; }
+  button.analyze:disabled { background:#3A4D5C; cursor:default; }
+  .result { margin-top:28px; background:#1B2A38; border-radius:14px; padding:24px; border:1px solid #2A3B4A; display:none; }
+  .result-head { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .verdict-label { font-size:16px; font-weight:700; }
+  .verdict-ur { font-family:'Noto Nastaliq Urdu',serif; font-size:14px; color:#8B97A3; direction:rtl; }
+  .conf { margin-left:auto; font-size:13px; color:#8B97A3; }
+  .gauge-label { font-size:11px; color:#8B97A3; margin-bottom:6px; letter-spacing:.08em; text-transform:uppercase; }
+  .gauge-track { position:relative; height:14px; background:#0F1820; border-radius:7px; overflow:hidden; margin-bottom:20px; }
+  .gauge-fill { position:absolute; left:0; top:0; bottom:0; border-radius:7px; transition:width .6s ease; }
+  .reasoning { font-size:14.5px; line-height:1.6; color:#D9D2C4; margin:0 0 16px; }
+  .flags { display:flex; gap:8px; flex-wrap:wrap; }
+  .flag { font-size:12px; padding:4px 10px; border-radius:6px; background:#0F1820; color:#8B97A3; border:1px solid #2A3B4A; }
+  .error { color:#C1553B; font-size:14px; margin-top:16px; }
+  .note { margin-top:48px; padding-top:24px; border-top:1px solid #2A3B4A; font-size:12.5px; color:#5F6E7A; line-height:1.7; }
+  .credit { font-size:12.5px; color:#5F6E7A; margin-top:18px; letter-spacing:.04em; }
+  .credit b { color:#8B97A3; }
+  .spin { animation: spin .9s linear infinite; display:inline-block; }
+  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">💧 Applied AI Project · Independent Study</div>
+  <h1>Urdu &amp; Roman Urdu Misinformation Detector</h1>
+  <h2 class="urdu">اردو غلط معلومات شناخت کار</h2>
+  <p class="sub">Paste an Urdu or Roman Urdu post — flood alert, health claim, political rumour — and get a screening verdict with reasoning.</p>
+
+  <div class="card">
+    <textarea id="input" rows="4" dir="auto" placeholder="یہاں پوسٹ پیسٹ کریں... یا Roman Urdu mein type karein"></textarea>
+    <div class="row">
+      <div class="chips">
+        <button class="chip" data-text="Fori khabar: kal raat sailab shehar mein dakhil ho jayega, sab log abhi ghar khali kar dein, warna phans jayenge.">Try: Roman Urdu example</button>
+        <button class="chip" data-text="محکمہ موسمیات کے مطابق اگلے 48 گھنٹوں میں شہر کے نشیبی علاقوں میں بارش کی پیشگوئی ہے، رہائشیوں کو احتیاط کی ہدایت۔">Try: Urdu example</button>
+      </div>
+      <button class="analyze" id="analyzeBtn">Analyze post</button>
+    </div>
+  </div>
+
+  <div class="error" id="error" style="display:none;"></div>
+
+  <div class="result" id="result">
+    <div class="result-head">
+      <span id="verdictLabel" class="verdict-label"></span>
+      <div>
+        <div id="verdictLabel2" class="verdict-label"></div>
+        <div id="verdictUr" class="verdict-ur"></div>
+      </div>
+      <span class="conf" id="confText"></span>
+    </div>
+    <div class="gauge-label">Risk gauge</div>
+    <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+    <p class="reasoning" id="reasoning"></p>
+    <div class="flags" id="flags"></div>
+  </div>
+
+  <div class="note">
+    <strong style="color:#8B97A3;">Methodology note:</strong> This tool compares an AI-based classifier against a simple keyword baseline as part of an independent project screening Urdu / Roman Urdu misinformation during flood season. Verify against official sources (NDMA, PDMA, PMD) before acting — this is a screening aid, not a fact-checker.
+    <p class="credit">Made by <b>Anas Anwar</b></p>
+  </div>
+</div>
+
+<script>
+const VERDICTS = {
+  fake: { label: "Likely Fake", labelUr: "ممکنہ طور پر جھوٹی", color: "#C1553B" },
+  unverified: { label: "Unverified", labelUr: "غیر تصدیق شدہ", color: "#E8A33D" },
+  real: { label: "Likely Real", labelUr: "ممکنہ طور پر درست", color: "#3F8F82" },
+};
+
+document.querySelectorAll(".chip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById("input").value = btn.dataset.text;
+  });
+});
+
+document.getElementById("analyzeBtn").addEventListener("click", async () => {
+  const input = document.getElementById("input").value.trim();
+  const btn = document.getElementById("analyzeBtn");
+  const errorBox = document.getElementById("error");
+  const resultBox = document.getElementById("result");
+  errorBox.style.display = "none";
+  resultBox.style.display = "none";
+  if (!input) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Analyzing';
+
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: input }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+
+    const v = VERDICTS[data.verdict] || VERDICTS.unverified;
+    document.getElementById("verdictLabel").style.display = "none";
+    document.getElementById("verdictLabel2").textContent = v.label;
+    document.getElementById("verdictLabel2").style.color = v.color;
+    document.getElementById("verdictUr").textContent = v.labelUr;
+    document.getElementById("confText").textContent = "Confidence: " + data.confidence + "%";
+    document.getElementById("reasoning").textContent = data.reasoning_en;
+
+    const fill = document.getElementById("gaugeFill");
+    fill.style.width = data.confidence + "%";
+    fill.style.background = `linear-gradient(90deg, ${v.color}99, ${v.color})`;
+
+    const flagsBox = document.getElementById("flags");
+    flagsBox.innerHTML = "";
+    (data.flags || []).forEach(f => {
+      const span = document.createElement("span");
+      span.className = "flag";
+      span.textContent = f;
+      flagsBox.appendChild(span);
+    });
+
+    resultBox.style.display = "block";
+  } catch (e) {
+    errorBox.textContent = "Couldn't analyze that post. Try again in a moment.";
+    errorBox.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Analyze post";
+  }
+});
+</script>
+</body>
+</html>
