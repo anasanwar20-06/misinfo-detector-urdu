@@ -2,13 +2,14 @@
 
 An AI-based screening tool that analyzes Urdu and Roman Urdu social media posts (flood alerts, health claims, political rumours) and returns a verdict — fake, unverified, or real — with reasoning and risk flags.
 
-**Live demo:** _add your Vercel URL here after deployment_
+**Live demo:** Not yet deployed — see "Running it yourself" below to run locally or deploy your own instance.
+
 
 ## Why this project
 
 Urdu-language NLP is significantly underexplored compared to English, despite being spoken by over 230 million people. Pakistan also faces a recurring, high-stakes misinformation problem during monsoon/flood season, when false flood alerts and fake advisories spread rapidly on social media and can cause real harm. This project sits at the intersection of both gaps: applying modern LLM-based classification to a low-resource language, in a locally relevant context.
 
-This is an independent project (university-approved), built to explore practical applied NLP beyond coursework.
+This is an independent project ( ), built to explore practical applied NLP beyond coursework.
 
 ## How it works
 
